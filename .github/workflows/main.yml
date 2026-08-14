@@ -1,18 +1,27 @@
 name: Auto Post
+
 on:
   schedule:
     - cron: '0 9 * * *' # 매일 오전 9시에 실행
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Make client_secret.json from GitHub Secret
+        run: echo '${{ secrets.CLENT_SECRET }}' > client_secret.json
+
       - name: Run script
         run: python main.py
