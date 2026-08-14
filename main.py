@@ -5,7 +5,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 # 블로그 ID와 인증 정보 경로 설정
-BLOG_ID = '여기에_본인의_블로그_ID를_넣으세요' # 블로그 주소 뒤에 나오는 번호
+BLOG_ID = '742203761012618877' # 블로그 주소 뒤에 나오는 번호
 CLIENT_SECRET_FILE = 'client_secret.json'
 
 def get_service():
