@@ -34,7 +34,7 @@ def get_service():
 def post_blog(title, content):
     service = get_service()
     # 본인의 블로그 ID (블로그 주소의 고유 ID) 입력 필요
-    blog_id = 'YOUR_BLOG_ID' 
+    blog_id = '742203761012618877' 
     
     body = {
         'title': title,
