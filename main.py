@@ -1,30 +1,15 @@
 import os
 import pickle
-from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-SCOPES = ['https://www.googleapis.com/auth/blogger']
-
 def get_service():
-    creds = None
+    # 깃허브 서버에 저장되어 있는 인증 토큰 파일을 불러옵니다.
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
-            
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secret.json', SCOPES)
-            # GitHub 서버 환경 에러 방지를 위해 콘솔 기반 인증으로 변경
-            creds = flow.run_console()
-            
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    return build('blogger', 'v3', credentials=creds)
+        return build('blogger', 'v3', credentials=creds)
+    else:
+        raise Exception("token.pickle 파일이 없습니다! 로컬에서 인증 후 업로드해야 합니다.")
 
 def post_blog(title, content):
     service = get_service()
