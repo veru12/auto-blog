@@ -1,19 +1,33 @@
 import os
-import pickle
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+
+SCOPES = ['https://www.googleapis.com/auth/blogger']
 
 def get_service():
-    # 깃허브 서버에 저장되어 있는 인증 토큰 파일을 불러옵니다.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-        return build('blogger', 'v3', credentials=creds)
-    else:
-        raise Exception("token.pickle 파일이 없습니다! 로컬에서 인증 후 업로드해야 합니다.")
+    # GitHub Secrets 환경 변수에서 인증 정보를 불러옵니다.
+    creds = None
+    token_json = os.environ.get('GOOGLE_TOKEN_JSON')
+    
+    if token_json:
+        # 텍스트로 저장된 토큰 정보를 불러옴
+        from io import StringIO
+        import json
+        creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
+        
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            raise Exception("Google 인증 토큰(GOOGLE_TOKEN_JSON)이 GitHub Secrets에 설정되지 않았습니다!")
+
+    return build('blogger', 'v3', credentials=creds)
 
 def post_blog(title, content):
     service = get_service()
-    blog_id = '742283761812618877' # 본인의 블로그 ID 숫자
+    blog_id = '742283761812618877' # 본인 블로그 ID
     
     body = {
         'title': title,
