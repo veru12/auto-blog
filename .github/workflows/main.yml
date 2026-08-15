@@ -1,9 +1,9 @@
 name: Auto Post
 
 on:
+  workflow_dispatch:  # 이걸 두면 수동 실행도 여전히 가능합니다.
   schedule:
-    - cron: '0 9 * * *' # 매일 오전 9시에 실행
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # 이 시간은 UTC 기준입니다. 한국 시간(KST) 아침 9시를 맞추려면 이 값을 설정해야 합니다.
 
 jobs:
   build:
