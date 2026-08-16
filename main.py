@@ -55,4 +55,4 @@ def post_to_blogger(post_title, post_content):
 post_to_blogger(keyword, post_content)
 
 # (참고) 기존에 쓰시던 구글 블로그 API 발행 코드로 이어서 발행을 진행하시면 됩니다.
-# post_to_blogger(keyword, post_content)
+
