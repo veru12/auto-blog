@@ -48,9 +48,9 @@ def post_to_blogger(post_title, post_content):
         request = posts.insert(blogId=blog_id, body=body)
         request.execute()
         print("🎉 구글 블로거 발행 성공!")
-    except Exception as e:
+  except Exception as e:
         print(f"❌ 발행 중 에러 발생: {e}")
-
+        raise e  # 에러를 숨기지 않고 깃허브 액션에 빨간색으로 확실히 띄움
 # 함수 호출 (keyword를 title 자리에 전달)
 post_to_blogger(keyword, post_content)
 
