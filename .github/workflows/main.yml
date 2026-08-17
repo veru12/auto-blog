@@ -2,12 +2,11 @@ name: Auto Blog Post
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *' # 매일 아침 9시 (KST 기준) 자동 실행
 
 jobs:
   build:
-  # it-blog가 아닌 auto-blog 저장소 전용 환경
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openai
+          pip install requests openai
 
       - name: Run script
         env:
@@ -30,4 +29,10 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           BLOG_EMAIL: ${{ secrets.BLOG_EMAIL }}
+          BLOG_ID: ${{ secrets.BLOG_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
