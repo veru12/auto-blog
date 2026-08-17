@@ -1,11 +1,10 @@
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from openai import OpenAI
 import re
 from datetime import datetime
 import sys
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 def get_theme_by_day():
     day_index = datetime.now().weekday()
@@ -56,7 +55,6 @@ def generate_blog_post():
     
     html_content = response.choices[0].message.content.strip()
     
-    # [핵심] 찌꺼기 마크다운 기호(```html, ``` 등)를 완벽하게 강제로 제거하는 코드
     html_content = re.sub(r'^```html\s*', '', html_content, flags=re.IGNORECASE)
     html_content = re.sub(r'^```\s*', '', html_content, flags=re.IGNORECASE)
     html_content = html_content.replace('```', '').strip()
@@ -66,23 +64,31 @@ def generate_blog_post():
     
     return title, html_content
 
-def send_email():
-    sender_email = os.environ.get("SENDER_EMAIL")
-    sender_password = os.environ.get("SENDER_PASSWORD")
-    blog_email = os.environ.get("BLOG_EMAIL")
+def post_to_blogger():
+    blog_id = os.environ.get("BLOG_ID")
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    refresh_token = os.environ.get("GOOGLE_REFRESH_TOKEN")
     
     title, html_content = generate_blog_post()
     
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = blog_email
-    msg['Subject'] = title
-    msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+    creds = Credentials(
+        None,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_uri="https://oauth2.googleapis.com/token"
+    )
     
-    with smtplib.SMTP_SSL("smtp.naver.com", 465) as server:
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, blog_email, msg.as_string())
-    print("성공! 깔끔하게 마크다운이 제거된 금융 포스팅 완료.")
+    service = build('blogger', 'v3', credentials=creds)
+    
+    body = {
+        "title": title,
+        "content": html_content
+    }
+    
+    posts = service.posts().insert(blogId=blog_id, body=body).execute()
+    print(f"성공! 구글 블로그에 포스팅이 등록되었습니다. URL: {posts.get('url')}")
 
 if __name__ == "__main__":
-    send_email()
+    post_to_blogger()
