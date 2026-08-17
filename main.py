@@ -66,17 +66,13 @@ def generate_blog_post():
     return title, html_content
 
 def send_email():
-    sender_email = os.environ.get("SENDER_EMAIL")
-    sender_password = os.environ.get("SENDER_PASSWORD")
-    blog_email = os.environ.get("BLOG_EMAIL")
+    # 시크릿에서 가져오는 대신 직접 입력해서 테스트
+    sender_email = "Venthes123@naver.com" 
+    sender_password = os.environ.get("SENDER_PASSWORD") # 비밀번호는 그대로 시크릿 유지
+    blog_email = "Venthes123@naver.com" # 받는 사람도 직접 입력
     
-    # 디버깅용 로그 (비밀번호가 비었는지 확인용)
-    print(f"SENDER_EMAIL Check: {'Loaded successfully' if sender_email else 'MISSING!'}")
-    print(f"SENDER_PASSWORD Check: {'Loaded successfully' if sender_password else 'MISSING!'}")
+    print(f"DEBUG: Sender={sender_email}, Blog={blog_email}")
     
-    if not sender_email or not sender_password:
-        raise ValueError("GitHub Secrets에 SENDER_EMAIL 또는 SENDER_PASSWORD가 설정되지 않았습니다!")
-
     title, html_content = generate_blog_post()
     
     msg = MIMEMultipart()
@@ -88,7 +84,6 @@ def send_email():
     with smtplib.SMTP_SSL("smtp.naver.com", 465) as server:
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, blog_email, msg.as_string())
-    print("성공! 메일 전송형 금융 포스팅 완료.")
-
+    print("성공! 메일 전송 완료.")
 if __name__ == "__main__":
     send_email()
