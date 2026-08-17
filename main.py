@@ -35,7 +35,7 @@ def generate_blog_post():
         except EOFError:
             pass
     
-    image_url = "[https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80](https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80)"
+    image_url = "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80"
     
     prompt_content = f"너는 월 수백만 원을 버는 전문 금융/경제 블로거야. {current_year}년 최신 경제 트렌드를 반영해 아주 알기 쉽고 신뢰성 높은 블로그 글을 써줘.\n" \
                      f"- 주제: {theme}\n" \
@@ -56,7 +56,6 @@ def generate_blog_post():
     
     html_content = response.choices[0].message.content.strip()
     
-    # 마크다운 찌꺼기 완벽 제거
     html_content = re.sub(r'^```html\s*', '', html_content, flags=re.IGNORECASE)
     html_content = re.sub(r'^```\s*', '', html_content, flags=re.IGNORECASE)
     html_content = html_content.replace('```', '').strip()
@@ -71,6 +70,13 @@ def send_email():
     sender_password = os.environ.get("SENDER_PASSWORD")
     blog_email = os.environ.get("BLOG_EMAIL")
     
+    # 디버깅용 로그 (비밀번호가 비었는지 확인용)
+    print(f"SENDER_EMAIL Check: {'Loaded successfully' if sender_email else 'MISSING!'}")
+    print(f"SENDER_PASSWORD Check: {'Loaded successfully' if sender_password else 'MISSING!'}")
+    
+    if not sender_email or not sender_password:
+        raise ValueError("GitHub Secrets에 SENDER_EMAIL 또는 SENDER_PASSWORD가 설정되지 않았습니다!")
+
     title, html_content = generate_blog_post()
     
     msg = MIMEMultipart()
