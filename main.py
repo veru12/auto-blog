@@ -10,6 +10,7 @@ import sys
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import base64
 
 def get_latest_economic_issue():
     default_theme = "2026년 최신 경제 트렌드 및 자산 관리 전략"
@@ -86,7 +87,6 @@ def generate_blog_post():
 
     return title, html_content
 
-# 구글 블로그 자동 발행 함수 추가
 def post_to_blogger(title, content):
     blog_id = os.environ.get("BLOG_ID")
     client_id = os.environ.get("CLIENT_ID")
@@ -127,53 +127,125 @@ def post_to_blogger(title, content):
         print("구글 블로그 포스팅 성공!")
     else:
         print("구글 블로그 포스팅 실패:", res.text)
+        raise Exception(f"Blogger API Error: {res.text}")
 
 def send_telegram_alert(title):
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     
     if not bot_token or not chat_id:
-        print("텔레그램 토큰 또는 챗 ID가 설정되지 않아 알림을 건너뜁니다.")
         return
 
     message = f"💰 [경제 블로그 포스팅 완료]\n\n제목: {title}"
     url = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){bot_token}/sendMessage"
-    
     data = urllib.parse.urlencode({'chat_id': chat_id, 'text': message}).encode('utf-8')
     try:
         req = urllib.request.Request(url, data=data, method='POST')
         with urllib.request.urlopen(req) as response:
-            print("텔레그램 알림 전송 성공!")
+            pass
     except Exception as e:
         print(f"텔레그램 알림 전송 실패: {e}")
 
-def send_email():
-    sender_email = "Venthes123@naver.com"
-    sender_password = os.environ.get("SENDER_PASSWORD")
-    blog_email = "Venthes123@naver.com"
+# AI 셀프 디버깅 및 코드 자가 수정 함수
+def self_correct_code(error_message):
+    print("AI가 에러를 감지하여 스스로 코드를 분석 및 수정합니다...")
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
     
-    if not sender_password:
-        raise ValueError("GitHub Secrets에 SENDER_PASSWORD가 설정되지 않았습니다!")
+    with open(__file__, "r", encoding="utf-8") as f:
+        current_code = f.read()
 
-    title, html_content = generate_blog_post()
-    
-    # 1. 구글 블로그 발행
-    post_to_blogger(title, html_content)
-    
-    # 2. 이메일 발송
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = blog_email
-    msg['Subject'] = f"[자동발행] {title}"
-    msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+    prompt = f"""파이썬 블로그 자동화 스크립트 실행 중 다음과 같은 에러가 발생했다.
+[에러 메시지]
+{error_message}
 
-    with smtplib.SMTP_SSL("smtp.naver.com", 465) as server:
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, blog_email, msg.as_string())
-    print("성공: 이메일 전송 완료.")
+[현재 main.py 코드]
+{current_code}
+
+위 에러를 해결할 수 있도록 수정된 전체 파이썬 코드를 작성해줘.
+주의사항:
+1. 마크다운 백틱(```python 등)을 절대 포함하지 말고, 오직 순수 파이썬 코드 텍스트만 출력해라.
+2. 기능이 누락되지 않도록 기존 코드를 기반으로 에러만 정확히 수정해라."""
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2
+    )
     
-    # 3. 텔레그램 알림 호출
-    send_telegram_alert(title)
+    fixed_code = response.choices[0].message.content.strip()
+    fixed_code = re.sub(r'^```python\s*', '', fixed_code, flags=re.IGNORECASE)
+    fixed_code = re.sub(r'^```\s*', '', fixed_code)
+    fixed_code = fixed_code.replace('```', '').strip()
+
+    # GitHub API를 통해 리포지토리의 main.py 자동 업데이트
+    github_token = os.environ.get("GH_PAT") # 깃허브 개인 액세스 토큰 필요
+    repo_name = os.environ.get("GITHUB_REPOSITORY") # 깃허브 자동 제공 변수 (예: 계정명/저장소명)
+    
+    if not github_token or not repo_name:
+        print("GitHub 토큰(GH_PAT)이 없어 코드를 자동 커밋하지 못했습니다.")
+        return
+
+    api_url = f"[https://api.github.com/repos/](https://api.github.com/repos/){repo_name}/contents/main.py"
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json"
+    }
+    
+    # 기존 파일의 SHA 값 가져오기
+    res = requests.get(api_url, headers=headers)
+    if res.status_code == 200:
+        file_sha = res.json().get("sha")
+    else:
+        return
+
+    encoded_content = base64.b64encode(fixed_code.encode("utf-8")).decode("utf-8")
+    
+    update_data = {
+        "message": "AI Self-Correction: Fix runtime error automatically",
+        "content": encoded_content,
+        "sha": file_sha
+    }
+    
+    update_res = requests.put(api_url, headers=headers, json=update_data)
+    if update_res.status_code in [200, 201]:
+        print("AI가 성공적으로 코드를 자가 수정하여 깃허브에 커밋했습니다!")
+    else:
+        print("코드 자가 커밋 실패:", update_res.text)
+
+def run_pipeline():
+    try:
+        sender_email = "Venthes123@naver.com"
+        sender_password = os.environ.get("SENDER_PASSWORD")
+        blog_email = "Venthes123@naver.com"
+        
+        if not sender_password:
+            raise ValueError("GitHub Secrets에 SENDER_PASSWORD가 설정되지 않았습니다!")
+
+        title, html_content = generate_blog_post()
+        
+        # 1. 구글 블로그 발행
+        post_to_blogger(title, html_content)
+        
+        # 2. 이메일 발송
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = blog_email
+        msg['Subject'] = f"[자동발행] {title}"
+        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+        with smtplib.SMTP_SSL("smtp.naver.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, blog_email, msg.as_string())
+        print("성공: 이메일 전송 완료.")
+        
+        # 3. 텔레그램 알림 호출
+        send_telegram_alert(title)
+        
+    except Exception as e:
+        error_msg = str(e)
+        print(f"실행 중 치명적 오류 발생: {error_msg}")
+        # 오류 발생 시 AI 셀프 디버깅 작동
+        self_correct_code(error_msg)
 
 if __name__ == "__main__":
-    send_email()
+    run_pipeline()
